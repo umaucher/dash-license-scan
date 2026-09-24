@@ -19,9 +19,17 @@ Proof of Concept. Do not use in production environments.
 - **Simple to use**: Focus on usability
 - **Easy installation**: Run with [`pipx`](https://pypa.github.io/pipx/) or [`uvx`](https://docs.astral.sh/uv/concepts/tools/) - no complex setup required
 - **Self-contained**: Self-contained tool with `dash-licenses` JAR included and zero Python dependencies for simplified version management.
-- **Lockfile support**: Supports scanning common lockfile formats:
-  - `requirements.txt` (Python)
-  - `Cargo.lock` (Rust)
+- **Lockfile support**: Supports scanning common lockfile and dependency formats:
+  - **Python**: `requirements.txt.lock`, `requirements.txt`, `*.txt.lock`, `*.pip.lock`, `*.in`
+  - **Rust**: `Cargo.lock`
+
+### Expected Input: Direct Dependencies vs. Lockfiles
+
+For accurate and complete license compliance / SBOM generation:
+- **Lockfiles (`requirements.txt.lock`, `Cargo.lock`) are strongly recommended**:  
+  They contain the complete, resolved dependency tree (both direct and transitive dependencies) with exact version pins (and hashes). License obligations and copyleft clauses apply to transitive dependencies just as much as direct ones.
+- **Declarative requirement files (`requirements.txt`, `requirements.in`)**:  
+  These often list only first-level (direct) dependencies, and may contain unpinned or range-based constraints (e.g. `psutil`, `pytest>=9.0.0`). The Eclipse DASH tool requires exact versions (`name==version`) to query license metadata; unpinned entries cannot be resolved and will be skipped.
 
 ### Planned Features
 
@@ -47,23 +55,26 @@ That's it!
 The tool automatically detects the lockfile type based on filename and extension:
 
 ```bash
-# Scan a Python requirements file
+# Scan a Python pip-compile lockfile (recommended for complete dependency resolution)
+uvx dash-license-scan requirements.txt.lock
+
+# Scan a standard Python requirements file
 uvx dash-license-scan requirements.txt
 
 # Scan a Rust Cargo lockfile
 uvx dash-license-scan Cargo.lock
 
 # Scan multiple lockfiles at once
-uvx dash-license-scan requirements.txt Cargo.lock
+uvx dash-license-scan requirements.txt.lock Cargo.lock
 
-# Dry-run to see detected dependencies without invoking dash-licenses
-uvx dash-license-scan --dry-run requirements.txt
-```
+# Save license summary to a CSV file (useful for CI / automated SBOM workflows)
+uvx dash-license-scan --summary summary.csv requirements.txt.lock
 
+# Dry-run to see detected dependencies without invoking the Java dash-licenses tool
+uvx dash-license-scan --dry-run requirements.txt.lock
 
-For verbose logging:
-```bash
-uvx dash-license-scan -v requirements.txt
+# Verbose logging (debug mode)
+uvx dash-license-scan -v requirements.txt.lock
 ```
 
 
