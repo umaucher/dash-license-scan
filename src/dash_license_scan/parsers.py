@@ -1,9 +1,14 @@
 import logging
+import re
 import sys
 from collections.abc import Sequence
 from pathlib import Path
 
 logger = logging.getLogger(__name__)
+
+PACKAGE_RE = re.compile(
+    r"^([A-Za-z0-9][A-Za-z0-9_.-]*)(?:\[[^\]]*\])?\s*==\s*([^\s\\;]+)"
+)
 
 
 def parse(file: Path) -> list[str]:
@@ -11,29 +16,62 @@ def parse(file: Path) -> list[str]:
     if not file.exists():
         sys.exit(f"lockfile not found: {file}")
 
-    if file.suffix in {".txt", ".pip", ".requirements"}:
-        return parse_pypi(file)
-    elif file.name == "Cargo.lock" or file.suffix == ".lock":
+    if file.name == "Cargo.lock" or file.name.endswith(".cargo.lock"):
         return parse_crate(file)
-    else:
-        sys.exit(f"Unsupported lockfile type: {file}")
+    if (
+        file.suffix in {".txt", ".pip", ".requirements", ".in"}
+        or file.name.endswith(".txt.lock")
+        or file.name.endswith(".pip.lock")
+        or file.name.endswith(".requirements.lock")
+        or file.name == "requirements.lock"
+    ):
+        return parse_pypi(file)
+    if file.suffix == ".lock":
+        content = file.read_text(encoding="utf-8", errors="replace")
+        if "[[package]]" in content:
+            return parse_crate(file)
+        return parse_pypi(file)
+
+    sys.exit(f"Unsupported lockfile type: {file}")
 
 
 def lines(text: str) -> Sequence[str]:
-    for line in text.splitlines():
-        line = line.strip()
+    """Yield logical lines, joining lines ending with a backslash and skipping comments."""
+    accumulated: list[str] = []
+    for raw_line in text.splitlines():
+        line = raw_line.strip()
         if not line or line.startswith("#"):
             continue
-        yield line
+        if " #" in line:
+            line = line.split(" #", 1)[0].strip()
+
+        if line.endswith("\\"):
+            accumulated.append(line[:-1].rstrip())
+        else:
+            if accumulated:
+                accumulated.append(line)
+                combined = " ".join(part for part in accumulated if part)
+                accumulated.clear()
+                if combined:
+                    yield combined
+            elif line:
+                yield line
+    if accumulated:
+        combined = " ".join(part for part in accumulated if part)
+        if combined:
+            yield combined
 
 
-def parse_pypi(file: Path):
+def parse_pypi(file: Path) -> list[str]:
     deps: list[str] = []
 
     for line in lines(file.read_text(encoding="utf-8")):
-        if "==" in line:
-            name, _, version = line.strip("\\ ").partition("==")
+        match = PACKAGE_RE.match(line)
+        if match:
+            name, version = match.group(1), match.group(2)
             deps.append(f"pypi/pypi/-/{name}/{version}")
+        elif line.startswith("-"):
+            logger.debug(f"Ignoring pip option line: {line}")
         else:
             logger.warning(f"Skipping unsupported pip requirement line: {line}")
 
