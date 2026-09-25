@@ -6,7 +6,7 @@ import pytest
 from dash_license_scan.parsers import parse, parse_pypi
 
 
-def test_parse_requirements_txt_lock(tmp_path: Path):
+def test_parse_requirements_txt_lock(tmp_path: Path, caplog: pytest.LogCaptureFixture):
     lockfile = tmp_path / "requirements.txt.lock"
     lockfile.write_text(
         "basedpyright==1.35.0 \\\n"
@@ -15,11 +15,13 @@ def test_parse_requirements_txt_lock(tmp_path: Path):
         "iniconfig==2.3.0\n",
         encoding="utf-8",
     )
-    deps = parse(lockfile)
+    with caplog.at_level(logging.WARNING):
+        deps = parse(lockfile)
     assert deps == [
         "pypi/pypi/-/basedpyright/1.35.0",
         "pypi/pypi/-/iniconfig/2.3.0",
     ]
+    assert not caplog.records
 
 
 def test_parse_pypi_extras_and_comments(tmp_path: Path):
@@ -50,6 +52,20 @@ def test_parse_pypi_unsupported_line_warning(
         deps = parse_pypi(req_file)
     assert deps == []
     assert "Skipping unsupported pip requirement line: pytest>=9.0.0" in caplog.text
+
+
+def test_parse_pypi_rejects_non_exact_constraints(
+    tmp_path: Path, caplog: pytest.LogCaptureFixture
+):
+    req_file = tmp_path / "requirements.txt"
+    req_file.write_text(
+        "demo==1.*\ndemo==1.0,!=1.0.post1\ndemo===vendor-version\n",
+        encoding="utf-8",
+    )
+    with caplog.at_level(logging.WARNING):
+        deps = parse_pypi(req_file)
+    assert deps == []
+    assert caplog.text.count("Skipping unsupported pip requirement line") == 3
 
 
 def test_parse_generic_lock_file_detection(tmp_path: Path):

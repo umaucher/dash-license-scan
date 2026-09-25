@@ -7,7 +7,8 @@ from pathlib import Path
 logger = logging.getLogger(__name__)
 
 PACKAGE_RE = re.compile(
-    r"^([A-Za-z0-9][A-Za-z0-9_.-]*)(?:\[[^\]]*\])?\s*==\s*([^\s\\;]+)"
+    r"^([A-Za-z0-9][A-Za-z0-9_.-]*)(?:\[[^\]]*\])?\s*==(?!=)\s*"
+    r"([^\s\\;,<>=~*#]+)(?=\s|;|$)"
 )
 
 
