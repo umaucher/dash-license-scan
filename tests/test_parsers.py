@@ -63,3 +63,12 @@ def test_parse_generic_lock_file_detection(tmp_path: Path):
         encoding="utf-8",
     )
     assert parse(cargo_lock) == ["crate/cratesio/-/foo/1.0.0"]
+
+
+def test_parse_generic_python_toml_lock_file_is_not_cargo(tmp_path: Path):
+    python_lock = tmp_path / "custom.lock"
+    python_lock.write_text(
+        '[[package]]\nname = "requests"\nversion = "2.32.3"\n',
+        encoding="utf-8",
+    )
+    assert parse(python_lock) == []

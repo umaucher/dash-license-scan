@@ -3,7 +3,7 @@
 [![PyPI](https://img.shields.io/pypi/v/dash-license-scan.svg)](https://pypi.org/project/dash-license-scan/)
 [![License](https://img.shields.io/badge/license-Apache--2.0-blue.svg)](LICENSE)
 
-A thin Python CLI wrapper for [eclipse-dash/dash-licenses](https://github.com/eclipse-dash/dash-licenses).  
+A thin Python CLI wrapper for [eclipse-dash/dash-licenses](https://github.com/eclipse-dash/dash-licenses).
 It makes the official JAR easier to use via modern Python workflows (`pipx`, `uvx`) and adds helpers for lockfile conversion.
 
 ---
@@ -26,9 +26,9 @@ Proof of Concept. Do not use in production environments.
 ### Expected Input: Direct Dependencies vs. Lockfiles
 
 For accurate and complete license compliance / SBOM generation:
-- **Lockfiles (`requirements.txt.lock`, `Cargo.lock`) are strongly recommended**:  
+- **Lockfiles (`requirements.txt.lock`, `Cargo.lock`) are strongly recommended**:
   They contain the complete, resolved dependency tree (both direct and transitive dependencies) with exact version pins (and hashes). License obligations and copyleft clauses apply to transitive dependencies just as much as direct ones.
-- **Declarative requirement files (`requirements.txt`, `requirements.in`)**:  
+- **Declarative requirement files (`requirements.txt`, `requirements.in`)**:
   These often list only first-level (direct) dependencies, and may contain unpinned or range-based constraints (e.g. `psutil`, `pytest>=9.0.0`). The Eclipse DASH tool requires exact versions (`name==version`) to query license metadata; unpinned entries cannot be resolved and will be skipped.
 
 ### Planned Features
@@ -84,7 +84,7 @@ uvx dash-license-scan -v requirements.txt.lock
 
 Why not extend the Java code directly? Here are the reasons:
 
-- **Simplicity**: One-line usability with `uvx`/`pipx` 
+- **Simplicity**: One-line usability with `uvx`/`pipx`
 - **Ecosystem fit**: Most projects already use pip/uv for Python dependencies, making versioning and offline installs seamless
 - **Modern tooling**: Leverages modern Python packaging and execution workflows
 
